@@ -1,3 +1,3 @@
-module github.com/tiero/bitcoin-descriptors
+module github.com/tiero/taproot-descriptor
 
 go 1.22.6

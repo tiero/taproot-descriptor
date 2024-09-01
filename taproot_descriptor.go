@@ -1,4 +1,4 @@
-package main
+package taprootdescriptor
 
 import (
 	"errors"
@@ -76,7 +76,8 @@ func splitScriptTree(scriptTreeStr string) ([]string, error) {
 	return result, nil
 }
 
-func parseTaprootDescriptor(desc string) (TaprootDescriptor, error) {
+// ParseTaprootDescriptor parses a taproot descriptor string into a TaprootDescriptor struct
+func ParseTaprootDescriptor(desc string) (TaprootDescriptor, error) {
 	parts := strings.SplitN(desc[3:len(desc)-1], ",", 2)
 	if len(parts) != 2 {
 		return TaprootDescriptor{}, errors.New("invalid descriptor format")
@@ -108,31 +109,12 @@ func parseTaprootDescriptor(desc string) (TaprootDescriptor, error) {
 	}, nil
 }
 
-func compileDescriptor(desc TaprootDescriptor) string {
-	return fmt.Sprintf("Taproot output with unspendable internal key and %d script paths",
-		len(desc.ScriptTree))
-}
-
-func main() {
-	// Basic Taproot
-	basicDesc := fmt.Sprintf("tr(%s,{pk(81e0351fc94c3ba05f8d68354ff44711b02223f2b32fb7f3ef3a99a90af7952c)})", UnspendableKey)
-
-	// VTXO: (Alice & Server) or (Alice after 1 day)
-	vtxoDesc := fmt.Sprintf("tr(%s,{pk(81e0351fc94c3ba05f8d68354ff44711b02223f2b32fb7f3ef3a99a90af7952c),and_v(v:pk(59bffef74a89f39715b9f6b8a83e53a60a458d45542f20e2e2f4f7dbffafc5f8),older(144))})", UnspendableKey)
-
-	// Boarding: (Alice & Server) or (Alice after 1 year)
-	boardingDesc := fmt.Sprintf("tr(%s,{pk(81e0351fc94c3ba05f8d68354ff44711b02223f2b32fb7f3ef3a99a90af7952c),and_v(v:pk(59bffef74a89f39715b9f6b8a83e53a60a458d45542f20e2e2f4f7dbffafc5f8),older(52560))})", UnspendableKey)
-
-	descriptors := []string{basicDesc, vtxoDesc, boardingDesc}
-
-	for i, desc := range descriptors {
-		parsed, err := parseTaprootDescriptor(desc)
-		if err != nil {
-			fmt.Printf("Error parsing descriptor %d: %v\n", i+1, err)
-			continue
-		}
-
-		compiled := compileDescriptor(parsed)
-		fmt.Printf("Descriptor %d: %s\n", i+1, compiled)
+// CompileDescriptor compiles a TaprootDescriptor struct back into a descriptor string
+func CompileDescriptor(desc TaprootDescriptor) string {
+	scriptParts := make([]string, len(desc.ScriptTree))
+	for i, leaf := range desc.ScriptTree {
+		scriptParts[i] = leaf.Script
 	}
+	scriptTree := strings.Join(scriptParts, ",")
+	return fmt.Sprintf("tr(%s,{%s})", desc.InternalKey.Hex, scriptTree)
 }
