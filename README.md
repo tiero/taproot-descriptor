@@ -1,6 +1,6 @@
 # Taproot Descriptor
 
-A Go package for parsing and compiling Bitcoin Taproot descriptors, based on the [Bitcoin Dev Kit (BDK) output descriptor extensions](https://bitcoindevkit.org/descriptors).
+A Go package for parsing and compiling Bitcoin Taproot descriptors.
 
 > ⚠️ ALPHA SOFTWARE - WORK IN PROGRESS ⚠️
 > This package is in active development and should be considered alpha software. It is not yet ready for production use. Use at your own risk.
@@ -69,7 +69,7 @@ func main() {
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.git s
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
