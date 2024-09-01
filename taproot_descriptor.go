@@ -1,6 +1,7 @@
 package taprootdescriptor
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -24,16 +25,22 @@ type TaprootDescriptor struct {
 }
 
 func parseKey(keyStr string) (Key, error) {
-	if keyStr != UnspendableKey {
-		return Key{}, errors.New("invalid internal key: must use unspendable key for taproot")
+	decoded, err := hex.DecodeString(keyStr)
+	if err != nil {
+		return Key{}, fmt.Errorf("invalid key: not a valid hex string: %v", err)
 	}
-	return Key{Hex: UnspendableKey}, nil
-}
 
-func parseLeafScript(scriptStr string) (LeafScript, error) {
-	return LeafScript{Script: scriptStr, Weight: 1}, nil
+	switch len(decoded) {
+	case 32:
+		// x-only public key, this is correct for Taproot
+		return Key{Hex: keyStr}, nil
+	case 33:
+		// compressed public key, we need to remove the prefix byte
+		return Key{Hex: keyStr[2:]}, nil
+	default:
+		return Key{}, fmt.Errorf("invalid key length: expected 32 or 33 bytes, got %d", len(decoded))
+	}
 }
-
 func splitScriptTree(scriptTreeStr string) ([]string, error) {
 	var result []string
 	var current strings.Builder
@@ -76,11 +83,20 @@ func splitScriptTree(scriptTreeStr string) ([]string, error) {
 	return result, nil
 }
 
-// ParseTaprootDescriptor parses a taproot descriptor string into a TaprootDescriptor struct
+func parseLeafScript(scriptStr string) (LeafScript, error) {
+	return LeafScript{Script: strings.TrimSpace(scriptStr), Weight: 1}, nil
+}
+
 func ParseTaprootDescriptor(desc string) (TaprootDescriptor, error) {
-	parts := strings.SplitN(desc[3:len(desc)-1], ",", 2)
-	if len(parts) != 2 {
+	if !strings.HasPrefix(desc, "tr(") || !strings.HasSuffix(desc, ")") {
 		return TaprootDescriptor{}, errors.New("invalid descriptor format")
+	}
+
+	content := desc[3 : len(desc)-1]
+	parts := strings.SplitN(content, ",", 2)
+
+	if len(parts) != 2 {
+		return TaprootDescriptor{}, errors.New("invalid descriptor format: missing script tree")
 	}
 
 	internalKey, err := parseKey(parts[0])
@@ -88,19 +104,25 @@ func ParseTaprootDescriptor(desc string) (TaprootDescriptor, error) {
 		return TaprootDescriptor{}, err
 	}
 
-	scriptTreeStr := parts[1][1 : len(parts[1])-1] // Remove outer braces
-	scriptParts, err := splitScriptTree(scriptTreeStr)
-	if err != nil {
-		return TaprootDescriptor{}, err
+	scriptTreeStr := parts[1]
+	if !strings.HasPrefix(scriptTreeStr, "{") || !strings.HasSuffix(scriptTreeStr, "}") {
+		return TaprootDescriptor{}, errors.New("invalid script tree format")
 	}
+	scriptTreeStr = scriptTreeStr[1 : len(scriptTreeStr)-1]
 
-	var scriptTree []LeafScript
-	for _, scriptStr := range scriptParts {
-		leaf, err := parseLeafScript(scriptStr)
+	scriptTree := []LeafScript{} // Initialize as empty slice instead of nil
+	if scriptTreeStr != "" {
+		scriptParts, err := splitScriptTree(scriptTreeStr)
 		if err != nil {
 			return TaprootDescriptor{}, err
 		}
-		scriptTree = append(scriptTree, leaf)
+		for _, scriptStr := range scriptParts {
+			leaf, err := parseLeafScript(scriptStr)
+			if err != nil {
+				return TaprootDescriptor{}, err
+			}
+			scriptTree = append(scriptTree, leaf)
+		}
 	}
 
 	return TaprootDescriptor{

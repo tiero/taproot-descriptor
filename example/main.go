@@ -1,31 +1,10 @@
-# Taproot Descriptor
-
-A Go package for parsing and compiling Bitcoin Taproot descriptors.
-
-> ⚠️ ALPHA SOFTWARE - WORK IN PROGRESS ⚠️
-> This package is in active development and should be considered alpha software. It is not yet ready for production use. Use at your own risk.
-
-
-## Installation
-
-To install the package, run:
-
-```bash
-go get github.com/tiero/taproot-descriptor
-```
-
-## Usage
-
-Here's a simple example of how to use the package:
-
-```go
 package main
 
 import (
 	"fmt"
 	"log"
 
-	"github.com/tiero/taproot-descriptor"
+	taprootdescriptor "github.com/tiero/taproot-descriptor"
 )
 
 func main() {
@@ -57,18 +36,3 @@ func main() {
 	}
 	fmt.Printf("Parsed VTXO-like descriptor: %+v\n", vtxoParsed)
 }
-```
-
-## Features
-
-- Parse Taproot descriptors into structured data
-- Compile structured data back into Taproot descriptor strings
-- Support for complex script paths
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
